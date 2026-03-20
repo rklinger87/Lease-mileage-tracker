@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lease Mileage Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --blue-bg: #1d4ed8;
+      --blue-panel: #1e40af;
+      --tile: #e5e7eb;
+      --tile-border: #cbd5e1;
+      --red-bg: #fee2e2;
+      --red-border: #fca5a5;
+      --green-bg: #dcfce7;
+      --green-border: #86efac;
+      --text: #0f172a;
+      --muted: #475569;
+      --white: #ffffff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--blue-bg);
+      color: var(--text);
+    }
+
+    .app {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    .hero {
+      background: var(--blue-panel);
+      color: var(--white);
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
+      margin-bottom: 16px;
+    }
+
+    .hero h1 {
+      margin: 0 0 8px 0;
+      font-size: 28px;
+    }
+
+    .hero p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.45;
+      color: #dbeafe;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      background: #1e3a8a;
+      padding: 6px;
+      border-radius: 18px;
+      margin-bottom: 16px;
+    }
+
+    .tab-button {
+      border: none;
+      border-radius: 14px;
+      padding: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      background: transparent;
+      color: var(--white);
+    }
+
+    .tab-button.active {
+      background: var(--tile);
+      color: var(--text);
+    }
+
+    .section { display: none; }
+    .section.active { display: block; }
+
+    .card {
+      background: var(--tile);
+      border: 1px solid var(--tile-border);
+      border-radius: 20px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .card h2 {
+      margin: 0 0 14px 0;
+      font-size: 20px;
+    }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    .field label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid #94a3b8;
+      font-size: 16px;
+      background: #fff;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .button {
+      width: 100%;
+      border: none;
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      background: var(--blue-bg);
+      color: var(--white);
+      cursor: pointer;
+    }
+
+    .button.secondary {
+      background: #64748b;
+    }
+
+    .button:active { transform: scale(0.99); }
+
+    .small-note {
+      background: #cbd5e1;
+      color: #334155;
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.4;
+      margin-top: 12px;
+    }
+
+    .reading-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px;
+      border-radius: 14px;
+      background: #cbd5e1;
+      margin-bottom: 10px;
+    }
+
+    .reading-row strong {
+      display: block;
+      font-size: 15px;
+    }
+
+    .reading-row span {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .delete-button {
+      border: none;
+      background: transparent;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .tile {
+      background: var(--tile);
+      border: 1px solid var(--tile-border);
+      border-radius: 20px;
+      padding: 16px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .tile.red {
+      background: var(--red-bg);
+      border-color: var(--red-border);
+    }
+
+    .tile.green {
+      background: var(--green-bg);
+      border-color: var(--green-border);
+    }
+
+    .tile-label {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .tile-value {
+      font-size: 28px;
+      font-weight: 800;
+      margin-top: 8px;
+      line-height: 1.15;
+    }
+
+    .tile-subtitle {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+      line-height: 1.35;
+    }
+
+    .as-of {
+      font-weight: 700;
+    }
+
+    .footer-note {
+      text-align: center;
+      color: #dbeafe;
+      font-size: 12px;
+      padding: 6px 10px 22px;
+    }
+
+    canvas {
+      width: 100% !important;
+      max-height: 320px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="hero">
+      <h1>Lease Mileage Tracker</h1>
+      <p>Save mileage readings over time, track your pace, and avoid end-of-lease surprises.</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-button active" data-tab="inputs">Inputs</button>
+      <button class="tab-button" data-tab="dashboard">Dashboard</button>
+    </div>
+
+    <div id="inputs" class="section active">
+      <div class="card">
+        <h2>One-Time Inputs</h2>
+        <div class="field">
+          <label for="startingOdometer">Odometer at Beginning of Lease</label>
+          <input id="startingOdometer" type="number" />
+        </div>
+        <div class="field">
+          <label for="leaseStart">Date of Lease Start</label>
+          <input id="leaseStart" type="date" />
+        </div>
+        <div class="field">
+          <label for="leaseEnd">Date of Lease End</label>
+          <input id="leaseEnd" type="date" />
+        </div>
+        <div class="field">
+          <label for="totalAllowedMiles">Total Lease Miles Allowed</label>
+          <input id="totalAllowedMiles" type="number" />
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Add or Update Mileage Reading</h2>
+        <div class="field">
+          <label for="readingDate">Date of Reading</label>
+          <input id="readingDate" type="date" />
+        </div>
+        <div class="field">
+          <label for="readingOdometer">Odometer Reading</label>
+          <input id="readingOdometer" type="number" />
+        </div>
+        <div class="button-row">
+          <button id="saveReadingButton" class="button">Save Reading</button>
+          <button id="clearAllButton" class="button secondary">Clear All</button>
+        </div>
+        <div class="small-note">
+          If you save a reading on a date that already exists, that date will be updated with the new odometer value. Clear All erases all saved settings and readings on this device.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Saved Readings</h2>
+        <div id="savedReadings"></div>
+      </div>
+    </div>
+
+    <div id="dashboard" class="section">
+      <div class="card">
+        <div id="asOfBanner" class="as-of">Metrics are based on mileage as of —</div>
+      </div>
+
+      <div class="metric-grid">
+        <div class="tile" id="tileTotalMiles">
+          <div class="tile-label">Total Miles Traveled</div>
+          <div class="tile-value" id="totalMilesValue">—</div>
+          <div class="tile-subtitle">Miles driven since lease start</div>
+        </div>
+
+        <div class="tile" id="tileMilesRemaining">
+          <div class="tile-label">Miles Remaining</div>
+          <div class="tile-value" id="milesRemainingValue">—</div>
+          <div class="tile-subtitle">Miles left before hitting lease limit</div>
+        </div>
+
+        <div class="tile" id="tileAveragePerDay">
+          <div class="tile-label">Average Miles Per Day</div>
+          <div class="tile-value" id="avgMilesValue">—</div>
+          <div class="tile-subtitle" id="avgMilesSubtitle">—</div>
+        </div>
+
+        <div class="tile" id="tilePaceDifference">
+          <div class="tile-label">Pace Difference</div>
+          <div class="tile-value" id="paceDifferenceValue">—</div>
+          <div class="tile-subtitle">Red means you are using miles too quickly. Green means you are banking miles.</div>
+        </div>
+
+        <div class="tile" id="tileNeededDailyAverage">
+          <div class="tile-label">Needed Daily Average</div>
+          <div class="tile-value" id="neededDailyValue">—</div>
+          <div class="tile-subtitle" id="neededDailySubtitle">—</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Mileage Over Time vs Goal Pace</h2>
+        <div class="small-note" style="margin-top: 0; margin-bottom: 14px;">
+          The blue line is the ideal pace across the full lease. The red line shows your actual readings over time.
+        </div>
+        <canvas id="mileageChart"></canvas>
+      </div>
+
+      <div class="card">
+        <h2>Quick Summary</h2>
+        <div id="quickSummary" style="font-size: 14px; line-height: 1.6;"></div>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      This single-file version saves data only in your browser on this device.
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "lease-mileage-tracker-html-v2";
+
+    const defaultData = {
+      setup: {
+        startingOdometer: 0,
+        leaseStart: "",
+        leaseEnd: "",
+        totalAllowedMiles: 45000
+      },
+      newReading: {
+        date: "",
+        odometer: ""
+      },
+      readings: []
+    };
+
+    let appData = loadData();
+    let chartInstance = null;
+
+    const els = {
+      startingOdometer: document.getElementById("startingOdometer"),
+      leaseStart: document.getElementById("leaseStart"),
+      leaseEnd: document.getElementById("leaseEnd"),
+      totalAllowedMiles: document.getElementById("totalAllowedMiles"),
+      readingDate: document.getElementById("readingDate"),
+      readingOdometer: document.getElementById("readingOdometer"),
+      saveReadingButton: document.getElementById("saveReadingButton"),
+      clearAllButton: document.getElementById("clearAllButton"),
+      savedReadings: document.getElementById("savedReadings"),
+      asOfBanner: document.getElementById("asOfBanner"),
+      totalMilesValue: document.getElementById("totalMilesValue"),
+      milesRemainingValue: document.getElementById("milesRemainingValue"),
+      avgMilesValue: document.getElementById("avgMilesValue"),
+      avgMilesSubtitle: document.getElementById("avgMilesSubtitle"),
+      paceDifferenceValue: document.getElementById("paceDifferenceValue"),
+      neededDailyValue: document.getElementById("neededDailyValue"),
+      neededDailySubtitle: document.getElementById("neededDailySubtitle"),
+      tilePaceDifference: document.getElementById("tilePaceDifference"),
+      quickSummary: document.getElementById("quickSummary")
+    };
+
+    const tabButtons = document.querySelectorAll(".tab-button");
+    const sections = document.querySelectorAll(".section");
+
+    tabButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const target = button.dataset.tab;
+        tabButtons.forEach((b) => b.classList.remove("active"));
+        sections.forEach((s) => s.classList.remove("active"));
+        button.classList.add("active");
+        document.getElementById(target).classList.add("active");
+      });
+    });
+
+    els.startingOdometer.addEventListener("input", handleSetupInput);
+    els.leaseStart.addEventListener("input", handleSetupInput);
+    els.leaseEnd.addEventListener("input", handleSetupInput);
+    els.totalAllowedMiles.addEventListener("input", handleSetupInput);
+    els.readingDate.addEventListener("input", handleNewReadingInput);
+    els.readingOdometer.addEventListener("input", handleNewReadingInput);
+    els.saveReadingButton.addEventListener("click", saveReading);
+    els.clearAllButton.addEventListener("click", clearAllData);
+
+    fillInputs();
+    renderAll();
+
+    function cloneDefaultData() {
+      return JSON.parse(JSON.stringify(defaultData));
+    }
+
+    function loadData() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        return saved ? JSON.parse(saved) : cloneDefaultData();
+      } catch (error) {
+        return cloneDefaultData();
+      }
+    }
+
+    function saveData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+    }
+
+    function fillInputs() {
+      els.startingOdometer.value = appData.setup.startingOdometer || "";
+      els.leaseStart.value = appData.setup.leaseStart || "";
+      els.leaseEnd.value = appData.setup.leaseEnd || "";
+      els.totalAllowedMiles.value = appData.setup.totalAllowedMiles || "";
+      els.readingDate.value = appData.newReading.date || "";
+      els.readingOdometer.value = appData.newReading.odometer || "";
+    }
+
+    function handleSetupInput() {
+      appData.setup.startingOdometer = Number(els.startingOdometer.value || 0);
+      appData.setup.leaseStart = els.leaseStart.value;
+      appData.setup.leaseEnd = els.leaseEnd.value;
+      appData.setup.totalAllowedMiles = Number(els.totalAllowedMiles.value || 0);
+      saveData();
+      renderAll();
+    }
+
+    function handleNewReadingInput() {
+      appData.newReading.date = els.readingDate.value;
+      appData.newReading.odometer = els.readingOdometer.value;
+      saveData();
+    }
+
+    function saveReading() {
+      const date = appData.newReading.date;
+      const odometer = Number(appData.newReading.odometer);
+
+      if (!date || !Number.isFinite(odometer) || odometer < 0) {
+        alert("Please enter a valid reading date and odometer value.");
+        return;
+      }
+
+      const existing = appData.readings.find((r) => r.date === date);
+      if (existing) {
+        existing.odometer = odometer;
+      } else {
+        appData.readings.push({ id: Date.now(), date, odometer });
+      }
+
+      appData.readings.sort((a, b) => new Date(a.date) - new Date(b.date));
+      saveData();
+      renderAll();
+      alert("Reading saved.");
+    }
+
+    function clearAllData() {
+      const confirmed = confirm("Clear all saved lease settings and mileage readings on this device?");
+      if (!confirmed) return;
+      localStorage.removeItem(STORAGE_KEY);
+      appData = cloneDefaultData();
+      fillInputs();
+      renderAll();
+      alert("All data cleared.");
+    }
+
+    function deleteReading(id) {
+      appData.readings = appData.readings.filter((reading) => reading.id !== id);
+      saveData();
+      renderAll();
+    }
+
+    function getSortedReadings() {
+      return [...appData.readings].sort((a, b) => new Date(a.date) - new Date(b.date));
+    }
+
+    function daysBetween(start, end) {
+      if (!start || !end) return 0;
+      const s = new Date(start + "T00:00:00");
+      const e = new Date(end + "T00:00:00");
+      const ms = e.getTime() - s.getTime();
+      return Math.max(0, Math.round(ms / 86400000));
+    }
+
+    function formatNumber(value, digits = 0) {
+      if (!Number.isFinite(value)) return "—";
+      return Number(value).toLocaleString(undefined, {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits
+      });
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return "—";
+      const date = new Date(dateString + "T00:00:00");
+      return date.toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      });
+    }
+
+    function paceLabel(value) {
+      if (!Number.isFinite(value)) return "—";
+      const rounded = Math.round(value);
+      if (rounded === 0) return "On pace";
+      return `${Math.abs(rounded).toLocaleString()} miles ${rounded > 0 ? "ahead of schedule" : "behind schedule"}`;
+    }
+
+    function calculateMetrics() {
+      const sortedReadings = getSortedReadings();
+      const lastReading = sortedReadings.length ? sortedReadings[sortedReadings.length - 1] : null;
+      const totalLeaseDays = daysBetween(appData.setup.leaseStart, appData.setup.leaseEnd);
+      const startingOdometer = Number(appData.setup.startingOdometer);
+      const totalAllowedMiles = Number(appData.setup.totalAllowedMiles);
+
+      if (!lastReading) {
+        return {
+          lastReading: null,
+          totalLeaseDays,
+          elapsedDays: 0,
+          remainingDays: 0,
+          totalMilesTraveled: 0,
+          milesRemaining: totalAllowedMiles,
+          avgMilesPerDay: 0,
+          expectedMilesByNow: 0,
+          paceVariance: 0,
+          neededDailyAverage: 0
+        };
+      }
+
+      const elapsedDays = daysBetween(appData.setup.leaseStart, lastReading.date);
+      const remainingDays = daysBetween(lastReading.date, appData.setup.leaseEnd);
+      const totalMilesTraveled = Number(lastReading.odometer) - startingOdometer;
+      const milesRemaining = totalAllowedMiles - totalMilesTraveled;
+      const avgMilesPerDay = elapsedDays > 0 ? totalMilesTraveled / elapsedDays : 0;
+      const expectedMilesByNow = totalLeaseDays > 0 ? totalAllowedMiles * (elapsedDays / totalLeaseDays) : 0;
+      const paceVariance = totalMilesTraveled - expectedMilesByNow;
+      const neededDailyAverage = remainingDays > 0 ? milesRemaining / remainingDays : 0;
+
+      return {
+        lastReading,
+        totalLeaseDays,
+        elapsedDays,
+        remainingDays,
+        totalMilesTraveled,
+        milesRemaining,
+        avgMilesPerDay,
+        expectedMilesByNow,
+        paceVariance,
+        neededDailyAverage
+      };
+    }
+
+    function buildChartData() {
+      const sortedReadings = getSortedReadings();
+      const totalLeaseDays = daysBetween(appData.setup.leaseStart, appData.setup.leaseEnd);
+      const allowedMiles = Number(appData.setup.totalAllowedMiles);
+      const startingOdometer = Number(appData.setup.startingOdometer);
+
+      if (!appData.setup.leaseStart || !appData.setup.leaseEnd || totalLeaseDays <= 0) {
+        return null;
+      }
+
+      const actualPoints = [
+        { x: 0, y: 0 },
+        ...sortedReadings.map((reading) => ({
+          x: daysBetween(appData.setup.leaseStart, reading.date),
+          y: Number(reading.odometer) - startingOdometer
+        }))
+      ].sort((a, b) => a.x - b.x);
+
+      const goalPoints = [
+        { x: 0, y: 0 },
+        { x: totalLeaseDays, y: allowedMiles }
+      ];
+
+      return { actualPoints, goalPoints, totalLeaseDays };
+    }
+
+    function renderSavedReadings() {
+      const sortedReadings = getSortedReadings();
+      if (!sortedReadings.length) {
+        els.savedReadings.innerHTML = '<div style="font-size:14px;color:#475569;">No readings saved yet.</div>';
+        return;
+      }
+
+      els.savedReadings.innerHTML = sortedReadings.map((reading) => `
+        <div class="reading-row">
+          <div>
+            <strong>${formatDate(reading.date)}</strong>
+            <span>${formatNumber(reading.odometer)} miles</span>
+          </div>
+          <button class="delete-button" onclick="deleteReading(${reading.id})" aria-label="Delete reading">🗑️</button>
+        </div>
+      `).join("");
+    }
+
+    function renderMetrics(metrics) {
+      const asOf = metrics.lastReading ? formatDate(metrics.lastReading.date) : "—";
+      els.asOfBanner.textContent = `Metrics are based on mileage as of ${asOf}`;
+      els.totalMilesValue.textContent = formatNumber(metrics.totalMilesTraveled);
+      els.milesRemainingValue.textContent = formatNumber(metrics.milesRemaining);
+      els.avgMilesValue.textContent = formatNumber(metrics.avgMilesPerDay, 1);
+      els.avgMilesSubtitle.textContent = `${formatNumber(metrics.elapsedDays)} days elapsed as of ${asOf}`;
+      els.paceDifferenceValue.textContent = paceLabel(metrics.paceVariance);
+      els.neededDailyValue.textContent = formatNumber(metrics.neededDailyAverage, 1);
+      els.neededDailySubtitle.textContent = `${formatNumber(metrics.remainingDays)} days remaining after ${asOf}`;
+
+      els.tilePaceDifference.classList.remove("red", "green");
+      if (metrics.paceVariance > 0) {
+        els.tilePaceDifference.classList.add("red");
+      } else if (metrics.paceVariance < 0) {
+        els.tilePaceDifference.classList.add("green");
+      }
+
+      els.quickSummary.innerHTML = `
+        <div>Expected miles by ${asOf}: <strong>${formatNumber(metrics.expectedMilesByNow)}</strong></div>
+        <div>Actual miles by ${asOf}: <strong>${formatNumber(metrics.totalMilesTraveled)}</strong></div>
+        <div>You will need to average <strong>${formatNumber(metrics.neededDailyAverage, 1)}</strong> miles for the next <strong>${formatNumber(metrics.remainingDays)}</strong> days to end with <strong>${formatNumber(appData.setup.totalAllowedMiles)}</strong> miles.</div>
+      `;
+    }
+
+    function renderChart(chartData) {
+      const ctx = document.getElementById("mileageChart").getContext("2d");
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      if (!chartData) return;
+
+      const leaseStartDate = appData.setup.leaseStart;
+      const totalLeaseDays = chartData.totalLeaseDays;
+
+      chartInstance = new Chart(ctx, {
+        type: "line",
+        data: {
+          datasets: [
+            {
+              label: "Goal pace",
+              data: chartData.goalPoints,
+              parsing: false,
+              borderColor: "#2563eb",
+              backgroundColor: "#2563eb",
+              borderWidth: 3,
+              pointRadius: 0,
+              tension: 0
+            },
+            {
+              label: "Actual readings",
+              data: chartData.actualPoints,
+              parsing: false,
+              borderColor: "#dc2626",
+              backgroundColor: "#dc2626",
+              borderWidth: 3,
+              pointRadius: 4,
+              pointHoverRadius: 5,
+              tension: 0.2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "nearest", intersect: false },
+          plugins: {
+            legend: { display: true },
+            tooltip: {
+              callbacks: {
+                title: function(items) {
+                  if (!items.length) return "";
+                  const dayOffset = items[0].raw.x;
+                  const date = new Date(leaseStartDate + "T00:00:00");
+                  date.setDate(date.getDate() + dayOffset);
+                  return date.toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric"
+                  });
+                },
+                label: function(context) {
+                  return `${context.dataset.label}: ${formatNumber(context.raw.y)} miles`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              type: "linear",
+              min: 0,
+              max: totalLeaseDays,
+              ticks: {
+                stepSize: Math.max(1, Math.round(totalLeaseDays / 6)),
+                callback: function(value) {
+                  const date = new Date(leaseStartDate + "T00:00:00");
+                  date.setDate(date.getDate() + value);
+                  return date.toLocaleDateString(undefined, {
+                    month: "short",
+                    year: "2-digit"
+                  });
+                },
+                maxRotation: 0,
+                autoSkip: false
+              },
+              title: { display: true, text: "Lease timeline" }
+            },
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: "Miles used" }
+            }
+          }
+        }
+      });
+    }
+
+    function renderAll() {
+      renderSavedReadings();
+      const metrics = calculateMetrics();
+      renderMetrics(metrics);
+      const chartData = buildChartData();
+      renderChart(chartData);
+      saveData();
+    }
+
+    window.deleteReading = deleteReading;
+  </script>
+</body>
+</html>
